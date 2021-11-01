@@ -4,6 +4,24 @@ using UnityEngine;
 
 public static class CameraStatics
 {
+    public static Vector3 ScreenToNdcPoint(
+        Vector3 screenPoint,
+        Matrix4x4 projectionMatrix,
+        float screenPxlHeight,
+        float screenPxlWidth)
+    {
+        ScreenToWorldPoint(
+            screenPoint,
+            projectionMatrix,
+            null,
+            screenPxlHeight,
+            screenPxlWidth,
+            out Vector3 viewportPoint,
+            out Vector3 ndcPoint,
+            out Vector3 cameraPoint);
+        return ndcPoint;
+    }
+
     /// <summary>
     /// Static implementation of Unity's Camera.ScreenToWorldPoint.
     /// </summary>
@@ -27,7 +45,7 @@ public static class CameraStatics
     }
 
     /// <summary>
-    /// Static implementation of Unity's Camera.ScreenToWorldPoint. Provides intermediate points for debugging.
+    /// Static implementation of Unity's Camera.ScreenToWorldPoint. Provides intermediate points.
     /// </summary>
     /// <param name="screenPoint"> The z coordinate should be z coordinate of the point in the camera system</param>
     /// <param name="projectionMatrix">Camera projection matrix</param>
@@ -39,7 +57,7 @@ public static class CameraStatics
     public static Vector3 ScreenToWorldPoint(
         Vector3 screenPoint, 
         Matrix4x4 projectionMatrix, 
-        Matrix4x4 worldToCameraMatrix,
+        Matrix4x4? worldToCameraMatrix,
         float screenPxlHeight,
         float screenPxlWidth,
         out Vector3 viewportPoint, 
@@ -79,9 +97,15 @@ public static class CameraStatics
         oglCameraPoint.y = deprojectedPoint.y / deprojectedPoint.w;
         oglCameraPoint.z = deprojectedPoint.z / deprojectedPoint.w;
 
-        Vector3 worldPoint = worldToCameraMatrix.inverse.MultiplyPoint(oglCameraPoint);
-
-        return worldPoint;
+        if (worldToCameraMatrix.HasValue) 
+        {
+            Vector3 worldPoint = worldToCameraMatrix.Value.inverse.MultiplyPoint(oglCameraPoint);
+            return worldPoint;
+        }
+        else
+        {
+            return Vector3.zero;
+        }
     }
 
     /// <summary>
@@ -106,7 +130,7 @@ public static class CameraStatics
     }
 
     /// <summary>
-    /// Static implementation of Unity's Camera.WorldToScreenPoint. Provides intermediate points for debugging.
+    /// Static implementation of Unity's Camera.WorldToScreenPoint. Provides intermediate points.
     /// </summary>
     /// <param name="worldPoint">Input world point</param>
     /// <param name="projectionMatrix">Camera projection matrix</param>
@@ -160,6 +184,16 @@ public static class CameraStatics
         );
 
         return new Vector3(screenPoint.x, screenPoint.y, worldPoint.z);
+    }
+
+    /// <summary>
+    /// Returns the world position of a camera given its view matrix
+    /// </summary>
+    /// <param name="worldToCameraMatrix"></param>
+    /// <returns></returns>
+    public static Vector3 GetWorldPosition(this Matrix4x4 worldToCameraMatrix) 
+    {     
+        return worldToCameraMatrix.inverse.MultiplyPoint(Vector3.zero);
     }
 }
 
