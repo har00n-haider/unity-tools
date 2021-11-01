@@ -45,17 +45,18 @@ public class CameraControl : MonoBehaviour
         }
         else
         {
+
+            initZDist = (camera.farClipPlane - camera.nearClipPlane) * 0.5f;
             initPointWorld = camera.ScreenToWorldPoint(new Vector3(
                 Input.mousePosition.x, 
-                Input.mousePosition.y, 
-                camera.farClipPlane));
-            initZDist = camera.farClipPlane;
+                Input.mousePosition.y,
+                initZDist));
         }
     }
 
 
     /// <summary>
-    /// Pans the camera given an initial world click locations and depth.
+    /// Pans the camera given an initial world click location and depth.
     /// 
     /// Calculates a new camera view matrix that is required to keep the 
     /// deprojected current screen point equal to the initial click point. 

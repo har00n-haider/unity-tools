@@ -4,6 +4,13 @@ using UnityEngine;
 
 public static class CameraStatics
 {
+
+    #region Coordinate trasformations
+
+    /// <summary>
+    /// Converts a screen point to an NDC space point.
+    /// </summary>
+    /// <returns>The deprojected screen point NDC space point (-1 to 1) in unity coordinate system</returns>
     public static Vector3 ScreenToNdcPoint(
         Vector3 screenPoint,
         Matrix4x4 projectionMatrix,
@@ -25,10 +32,9 @@ public static class CameraStatics
     /// <summary>
     /// Static implementation of Unity's Camera.ScreenToWorldPoint.
     /// </summary>
-    /// <param name="screenPoint"> The z coordinate should be z coordinate of the point in the camera system</param>
     public static Vector3 ScreenToWorldPoint(
-        Vector3 screenPoint, 
-        Matrix4x4 projectionMatrix, 
+        Vector3 screenPoint,
+        Matrix4x4 projectionMatrix,
         Matrix4x4 worldToCameraMatrix,
         float screenPxlHeight,
         float screenPxlWidth)
@@ -47,22 +53,22 @@ public static class CameraStatics
     /// <summary>
     /// Static implementation of Unity's Camera.ScreenToWorldPoint. Provides intermediate points.
     /// </summary>
-    /// <param name="screenPoint"> The z coordinate should be z coordinate of the point in the camera system</param>
+    /// <param name="screenPoint"> The z coordinate should be z coordinate of the resulting point in the camera system</param>
     /// <param name="projectionMatrix">Camera projection matrix</param>
-    /// <param name="worldToCameraMatrix">Camera view matrix</param>
+    /// <param name="worldToCameraMatrix">Camera view matrix, set to null if you only need coordinates in or before view space</param>
     /// <param name="viewportPoint">Unity style viewport point (0 - 1)</param>
     /// <param name="ndcPoint">NDC space point (-1 to 1) in unity coordinate system</param>
     /// <param name="oglCameraPoint">Camera point in OpenGL coordinate system (reversed z)</param>
     /// <returns>World point</returns>
     public static Vector3 ScreenToWorldPoint(
-        Vector3 screenPoint, 
-        Matrix4x4 projectionMatrix, 
+        Vector3 screenPoint,
+        Matrix4x4 projectionMatrix,
         Matrix4x4? worldToCameraMatrix,
         float screenPxlHeight,
         float screenPxlWidth,
-        out Vector3 viewportPoint, 
+        out Vector3 viewportPoint,
         out Vector3 ndcPoint,
-        out Vector3 oglCameraPoint) 
+        out Vector3 oglCameraPoint)
     {
         // viewport point (i.e. values between 0 - 1 in x/y, unity style)
         viewportPoint = new Vector3(
@@ -78,8 +84,8 @@ public static class CameraStatics
         ndcPoint = new Vector3(
             (viewportPoint.x * 2f) - 1f,
             (viewportPoint.y * 2f) - 1f,
-            zNdc 
-        ); 
+            zNdc
+        );
 
         // homogenous clip space point
         Vector4 clipPoint = new Vector4(
@@ -97,7 +103,7 @@ public static class CameraStatics
         oglCameraPoint.y = deprojectedPoint.y / deprojectedPoint.w;
         oglCameraPoint.z = deprojectedPoint.z / deprojectedPoint.w;
 
-        if (worldToCameraMatrix.HasValue) 
+        if (worldToCameraMatrix.HasValue)
         {
             Vector3 worldPoint = worldToCameraMatrix.Value.inverse.MultiplyPoint(oglCameraPoint);
             return worldPoint;
@@ -112,8 +118,8 @@ public static class CameraStatics
     /// Static implementation of Unity's Camera.WorldToScreenPoint.
     /// </summary>
     public static Vector3 WorldToScreenPoint(
-        Vector3 worldPoint, 
-        Matrix4x4 projectionMatrix, 
+        Vector3 worldPoint,
+        Matrix4x4 projectionMatrix,
         Matrix4x4 worldToCameraMatrix,
         float screenPxlHeight,
         float screenPxlWidth)
@@ -154,7 +160,7 @@ public static class CameraStatics
 
         // Same here, need to explicitly set the 4th value to 1 to get the correct depth in the canonical volume
         // homogenous clip space point
-        Vector4 clipPoint = projectionMatrix * new Vector4(oglCameraPoint.x, oglCameraPoint.y, oglCameraPoint.z, 1) ;
+        Vector4 clipPoint = projectionMatrix * new Vector4(oglCameraPoint.x, oglCameraPoint.y, oglCameraPoint.z, 1);
 
         // Consideration for points that are don't exist in 3d space (will this ever happen?)
         if (clipPoint.w == 0f)
@@ -186,13 +192,15 @@ public static class CameraStatics
         return new Vector3(screenPoint.x, screenPoint.y, worldPoint.z);
     }
 
+    #endregion
+
     /// <summary>
     /// Returns the world position of a camera given its view matrix
     /// </summary>
     /// <param name="worldToCameraMatrix"></param>
     /// <returns></returns>
-    public static Vector3 GetWorldPosition(this Matrix4x4 worldToCameraMatrix) 
-    {     
+    public static Vector3 GetWorldPosition(this Matrix4x4 worldToCameraMatrix)
+    {
         return worldToCameraMatrix.inverse.MultiplyPoint(Vector3.zero);
     }
 }
