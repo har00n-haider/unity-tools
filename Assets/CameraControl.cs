@@ -7,6 +7,8 @@ public class CameraControl : MonoBehaviour
     bool isMoving = false;
     new Camera camera;
 
+    System.IO.StreamWriter outputFile;
+
     // panning variables
     Vector3 initPointWorld;
     float initZDist;
@@ -14,6 +16,7 @@ public class CameraControl : MonoBehaviour
     void Awake()
     {           
         camera = GetComponent<Camera>();
+        outputFile = new System.IO.StreamWriter("logUT.csv", false);
     }
 
     void Update()
@@ -32,7 +35,7 @@ public class CameraControl : MonoBehaviour
             isMoving = false;
         }
 
-        if (isMoving) Pan();
+        if (isMoving) PanGeometric(Input.mousePosition);
     }
 
 
@@ -57,6 +60,34 @@ public class CameraControl : MonoBehaviour
 
     /// <summary>
     /// Pans the camera given an initial world click location and depth.
+    /// </summary>
+    private void PanGeometric(Vector3 cursorPosition)
+    {
+
+        // The plane is at the distance of the target focal point, but uses the camera's orientation, 
+        // meaning it's parallel to the camera's panning (XY) plane.
+        var cam = camera;
+        var ray = cam.ScreenPointToRay(cursorPosition);
+        var plane = new Plane(cam.transform.forward, initPointWorld);
+
+        // Intersecting the cursor ray with the focal plane turns the 2D cursor point into a 3D point
+        // that is already constrained to lie in the camera's motion plane.
+        // The required offset to move the focal point underneath the cursor ray is therefore
+        // just the offset between the two points in the plane.
+        plane.Raycast(ray, out float enter);
+        var d = initPointWorld - ray.GetPoint(enter);
+
+        // As these points are calculated in world-space, the offset can be directly applied to the camera.
+        camera.transform.position += d;
+
+        outputFile.WriteLine($"{Time.realtimeSinceStartup:F5},{cursorPosition.magnitude:F5},{d.magnitude:F5}");
+
+    }
+
+
+
+    /// <summary>
+    /// Pans the camera given an initial world click location and depth.
     /// 
     /// Calculates a new camera view matrix that is required to keep the 
     /// deprojected current screen point equal to the initial click point. 
@@ -66,7 +97,7 @@ public class CameraControl : MonoBehaviour
     /// Mv - view matrix of the camera
     /// Pi - the inital world point that was clicked
     /// </summary>
-    private void Pan()
+    private void PanNdc()
     {
         // Get the current screet point in camera space using the
         // inital click depth  (Pc)
